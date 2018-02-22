@@ -20,7 +20,7 @@
 # SOFTWARE.
 #
 # pynat.py
-"""PyNAT v0.1.0
+"""PyNAT v0.2.0
 
 Discover external IP addresses and NAT topologies using STUN.
 
@@ -39,7 +39,8 @@ except ImportError:
     def randint(n):
         return random.getrandbits(n)
 
-__version__ = '0.1.0'
+__version__ = '0.2.0'
+url = 'https://github.com/arantonitis/pynat'
 
 
 class PynatError(Exception):

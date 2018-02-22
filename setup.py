@@ -4,7 +4,7 @@
 # setup.py
 from setuptools import setup
 
-from pynat import __version__
+from pynat import __version__, url
 
 with open('README.rst', 'r') as f:
     long_description = f.read()
@@ -15,6 +15,7 @@ setup(name='pynat',
       long_description=long_description,
       author='Ariel Antonitis',
       author_email='arant@mit.edu',
+      url=url,
       py_modules=['pynat'],
       package_data={'*': ['README.rst']},
       entry_points={'console_scripts': ['pynat = pynat:main']},
