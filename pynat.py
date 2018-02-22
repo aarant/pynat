@@ -1,4 +1,26 @@
-"""Stunpy v0.0.0
+# PyNAT: Discover external IP addresses and NAT topologies using STUN.
+# Copyright (C) 2018 Ariel Antonitis. Licensed under the MIT License.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+# pynat.py
+"""PyNAT v0.0.0
 
 Discover external IP addresses and NAT topologies using STUN.
 
@@ -20,7 +42,7 @@ except ImportError:
 __version__ = '0.0.0'
 
 
-class StunpyError(Exception):
+class PynatError(Exception):
     """ Raised when an error occurs during network discovery. """
 
 # Non-NAT network topologies
@@ -178,7 +200,6 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
         return BLOCKED, None, None
     ext_ip, ext_port = response['ext_ip'], response['ext_port']
     change_addr = response['change_ip'], response['change_port']
-    topology = None
     # Either Open Internet or a UDP firewall, do test 2
     if response['ext_ip'] == source_ip:
         response = stun_test_2(sock, stun_addr)
@@ -199,7 +220,7 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
             response = stun_test_1(sock, change_addr)
             # This should never occur
             if response is None:
-                raise StunpyError('Error querying STUN server with changed address.')
+                raise PynatError('Error querying STUN server with changed address.')
             # Symmetric, restricted cone, or restricted port NAT
             else:
                 recv_ext_ip, recv_ext_port = response['ext_ip'], response['ext_port']
@@ -221,11 +242,11 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
 
 def main():
     try:
-        parser = argparse.ArgumentParser(prog='stunpy', description=__doc__)
+        parser = argparse.ArgumentParser(prog='pynat', description=__doc__)
         parser.add_argument('--source_ip', help='The source IPv4 address to bind to.', type=str, default='0.0.0.0')
         parser.add_argument('--source-port', help='The source port to bind to.', type=int, default=54320)
         parser.add_argument('--stun-host', help='The STUN host to use for queries.', type=str)
-        parser.add_argument('--stun-port', help='The port of the STUN host to user for queries.', type=int, default=3478)
+        parser.add_argument('--stun-port', help='The port of the STUN host to use for queries.', type=int, default=3478)
         args = parser.parse_args()
         source_ip, source_port, stun_host, stun_port = args.source_ip, args.source_port, args.stun_host, args.stun_port
         topology, ext_ip, ext_port = get_ip_info(source_ip, source_port, stun_host, stun_port)
