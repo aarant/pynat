@@ -40,9 +40,9 @@ Usage
 =====
 To get information about the network topology and external IP/port used, run ``pynat``::
 
-    Network type: restricted_cone
-    External IP: 127.0.0.1
-    External port: 1337
+    Network type: UDP Firewall 
+    Internal address: 127.0.0.1:54320 
+    External address: 127.0.0.1:54320
     
 Run ``pynat -h`` or ``pynat --help`` for more options::
 
@@ -67,6 +67,10 @@ To use PyNAT inside a Python shell or project::
 
     from pynat import get_ip_info
     topology, ext_ip, ext_port = get_ip_info()
+    
+To also get information about the internal IP, if unknown::
+
+    topology, ext_ip, ext_port, int_ip = get_ip_info(include_internal=True)
     
 Development
 ===========

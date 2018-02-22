@@ -20,7 +20,7 @@
 # SOFTWARE.
 #
 # pynat.py
-"""PyNAT v0.2.0
+"""PyNAT v0.3.0
 
 Discover external IP addresses and NAT topologies using STUN.
 
@@ -39,7 +39,7 @@ except ImportError:
     def randint(n):
         return random.getrandbits(n)
 
-__version__ = '0.2.0'
+__version__ = '0.3.0'
 url = 'https://github.com/arantonitis/pynat'
 
 
@@ -47,14 +47,14 @@ class PynatError(Exception):
     """ Raised when an error occurs during network discovery. """
 
 # Non-NAT network topologies
-BLOCKED = 'blocked'
-OPEN = 'open'
-UDP_FIREWALL = 'udp_firewall'
+BLOCKED = 'Blocked'
+OPEN = 'Open'
+UDP_FIREWALL = 'UDP Firewall'
 # NAT topologies
-FULL_CONE = 'full_cone'
-RESTRICTED_CONE = 'restricted_cone'
-RESTRICTED_PORT = 'restricted_port'
-SYMMETRIC = 'symmetric'
+FULL_CONE = 'Full-cone NAT'
+RESTRICTED_CONE = 'Restricted-cone NAT'
+RESTRICTED_PORT = 'Restricted-port NAT'
+SYMMETRIC = 'Symmetric NAT'
 
 # Stun message types
 BIND_REQUEST_MSG = b'\x00\x01'
@@ -182,14 +182,17 @@ def find_stun_server(sock):
 
 
 # Get the network topology, external IP, and external port
-def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_port=3478):
+def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_port=3478, include_internal=False):
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     sock.bind((source_ip, source_port))
-    sock.setsockopt(socket.SOL_SOCKET, socket.SOCK_DGRAM, 1)
     if stun_host is None:
         stun_addr = find_stun_server(sock)
         if stun_addr is None:
-            return BLOCKED, None, None
+            if include_internal:
+                return BLOCKED, None, None, None
+            else:
+                return BLOCKED, None, None
     else:
         stun_addr = (stun_host, stun_port)
     # Determine the actual local, or source IP
@@ -198,11 +201,14 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
     # Perform Test 1, a simple STUN Request
     response = stun_test_1(sock, stun_addr)
     if response is None:
-        return BLOCKED, None, None
+        if include_internal:
+            return BLOCKED, None, None, None
+        else:
+            return BLOCKED, None, None
     ext_ip, ext_port = response['ext_ip'], response['ext_port']
     change_addr = response['change_ip'], response['change_port']
     # Either Open Internet or a UDP firewall, do test 2
-    if response['ext_ip'] == source_ip:
+    if response['ext_ip'] == source_ip and response['ext_port'] == source_port:
         response = stun_test_2(sock, stun_addr)
         # Open Internet
         if response is not None:
@@ -238,6 +244,8 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
                 else:
                     topology = SYMMETRIC
     sock.close()
+    if include_internal:
+        return topology, ext_ip, ext_port, source_ip
     return topology, ext_ip, ext_port
 
 
@@ -250,8 +258,9 @@ def main():
         parser.add_argument('--stun-port', help='The port of the STUN host to use for queries.', type=int, default=3478)
         args = parser.parse_args()
         source_ip, source_port, stun_host, stun_port = args.source_ip, args.source_port, args.stun_host, args.stun_port
-        topology, ext_ip, ext_port = get_ip_info(source_ip, source_port, stun_host, stun_port)
-        print('Network type:', topology, '\nExternal IP:', ext_ip, '\nExternal port:', ext_port)
+        topology, ext_ip, ext_port, int_ip = get_ip_info(source_ip, source_port, stun_host, stun_port, True)
+        print('Network type:', topology, '\nInternal address: %s:%s' % (int_ip, source_port),
+              '\nExternal address: %s:%s' % (ext_ip, ext_port))
     except KeyboardInterrupt:
         sys.exit()
     else:
