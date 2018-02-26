@@ -20,7 +20,7 @@
 # SOFTWARE.
 #
 # pynat.py
-"""PyNAT v0.4.0
+"""PyNAT v0.5.0
 
 Discover external IP addresses and NAT topologies using STUN.
 
@@ -39,7 +39,7 @@ except ImportError:
     def randint(n):
         return random.getrandbits(n)
 
-__version__ = '0.4.0'
+__version__ = '0.5.0'
 url = 'https://github.com/arantonitis/pynat'
 
 
@@ -87,6 +87,9 @@ def send_stun_message(sock, addr, msg_type, trans_id=None, send_data=b''):
 # Get a STUN Binding response from a server, with optional extra data
 def get_stun_response(sock, addr, trans_id=None, send_data=b'', max_timeouts=6):
     timeouts = 0
+    response = None
+    old_timeout = sock.gettimeout()
+    sock.settimeout(0.5)
     while timeouts < max_timeouts:
         try:
             trans_id = send_stun_message(sock, addr, BIND_REQUEST_MSG, trans_id, send_data)
@@ -138,7 +141,9 @@ def get_stun_response(sock, addr, trans_id=None, send_data=b'', max_timeouts=6):
                 response['ext_ip'] = xor_ip
             if xor_port is not None:
                 response['ext_port'] = xor_port
-            return response
+            break
+    sock.settimeout(old_timeout)
+    return response
 
 
 # Retrieve the internal working IP used to access the Internet
@@ -189,7 +194,6 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((source_ip, source_port))
-        sock.settimeout(0.5)
     # Find a stun host if none was selected
     if stun_host is None:
         stun_addr = find_stun_server(sock)
