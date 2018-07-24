@@ -29,6 +29,7 @@ Copyright (C) 2018 Ariel Antonitis. Licensed under the MIT License.
 import sys
 import socket
 import random
+import codecs
 import argparse
 try:
     import secrets
@@ -73,12 +74,18 @@ XOR_MAPPED_ADDRESS = b'\x00\x20'
 STUN_SERVERS = [('stun.ekiga.net', 3478), ('stun.ideasip.com', 3478), ('stun.voiparound.com', 3478),
                 ('stun.voipbuster.com', 3478), ('stun.voipstunt.com', 3478), ('stun.voxgratia.org', 3478)]
 
+def ORD(ch):   # compatible to python3
+  return ch if type(ch) == int else ord(ch)
+
+def long_to_bytes(n,length):  # compatible to PY2 and PY3
+  # same to PY3: n.to_bytes(length,byteorder='big')
+  return bytes(bytearray((n >> i*8) & 0xff for i in range(length-1,-1,-1)))
 
 # Send a STUN message to a server, with optional extra data
 def send_stun_message(sock, addr, msg_type, trans_id=None, send_data=b''):
     if trans_id is None:
-        trans_id = randint(128).to_bytes(16, byteorder='big')
-    msg_len = len(send_data).to_bytes(2, byteorder='big')
+        trans_id = long_to_bytes(randint(128),16)
+    msg_len = long_to_bytes(len(send_data),2)
     data = msg_type+msg_len+trans_id+send_data
     sock.sendto(data, addr)
     return trans_id
@@ -102,7 +109,7 @@ def get_stun_response(sock, addr, trans_id=None, send_data=b'', max_timeouts=6):
             if len(recv) < 20:
                 continue
             msg_type, recv_trans_id, attrs = recv[:2], recv[4:20], recv[20:]
-            msg_len = int.from_bytes(recv[2:4], byteorder='big')
+            msg_len = int(codecs.encode(recv[2:4],'hex'),16)
             if msg_len != len(attrs):
                 continue
             if msg_type != BIND_RESPONSE_MSG:
@@ -112,20 +119,20 @@ def get_stun_response(sock, addr, trans_id=None, send_data=b'', max_timeouts=6):
             response = {}
             i = 0
             while i < msg_len:
-                attr_type, attr_length = attrs[i:i+2], int.from_bytes(attrs[i+2:i+4], byteorder='big')
+                attr_type, attr_length = attrs[i:i+2], int(codecs.encode(attrs[i+2:i+4],'hex'),16)
                 attr_value = attrs[i+4:i+4+attr_length]
                 i += 4 + attr_length
                 if attr_length % 4 != 0:  # If not on a 32-bit boundary, add padding bytes
                     i += 4 - (attr_length % 4)
                 if attr_type in [MAPPED_ADDRESS, SOURCE_ADDRESS, CHANGED_ADDRESS]:
-                    family, port = attr_value[1], int.from_bytes(attr_value[2:4], byteorder='big')
+                    family, port = ORD(attr_value[1]), int(codecs.encode(attr_value[2:4],'hex'),16)
                     ip = socket.inet_ntoa(attr_value[4:8])
                     if family == 0x01:  # IPv4
                         if attr_type == XOR_MAPPED_ADDRESS:
-                            cookie_int = int.from_bytes(MAGIC_COOKIE, 'big')
+                            cookie_int = int(codecs.encode(MAGIC_COOKIE,'hex'),16)
                             port ^= cookie_int >> 16
-                            ip = int.from_bytes(attr_value[4:8], byteorder='big') ^ cookie_int
-                            ip = socket.inet_ntoa(ip.to_bytes(4, byteorder='big'))
+                            ip = int(codecs.encode(attr_value[4:8],'hex'),16) ^ cookie_int
+                            ip = socket.inet_ntoa(long_to_bytes(ip,4))
                             response['xor_ip'], response['xor_port'] = ip, port
                         elif attr_type == MAPPED_ADDRESS:
                             response['ext_ip'], response['ext_port'] = ip, port
