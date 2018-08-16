@@ -11,6 +11,9 @@ update.sh
 changelog
 TODO
 *.so
+*.pyc
 *.pyd
 *.xcf
 standalone_build.py
+
+.DS_Store
