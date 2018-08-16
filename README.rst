@@ -9,14 +9,15 @@ PyNAT
 
 Discover external IP addresses and NAT topologies using STUN (Simple Traversal of UDP Through Network Address Translators).
 
-PyNAT follows `RFC 3489`_, and is inspired by a similar program for Python 2.x called PyStun_.
+PyNAT follows `RFC 3489`_, and is inspired by a similar program for 
+Python 2.x called PyStun_. PyNAT supports Python 2.7 and later.
 
 .. _RFC 3489: https://tools.ietf.org/html/rfc3489
 .. _PyStun: https://github.com/jtriley/pystun
 
 Installation
 ============
-PyNAT requires Python 3.2 or later.
+PyNAT requires Python 2.7 or later.
 
 From PyPI
 ---------

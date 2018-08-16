@@ -24,9 +24,10 @@ setup(name='pynat',
                    'Development Status :: 4 - Beta',
                    'Intended Audience :: Developers',
                    'Topic :: System :: Networking :: Firewalls',
+                   'Programming Language :: Python :: 2.7',
                    'Programming Language :: Python :: 3.2',
                    'Programming Language :: Python :: 3.3',
                    'Programming Language :: Python :: 3.4',
                    'Programming Language :: Python :: 3.5',
                    'Programming Language :: Python :: 3.6'],
-      python_requires='>=3.2')
+      python_requires='>=2.7')

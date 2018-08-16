@@ -20,7 +20,7 @@
 # SOFTWARE.
 #
 # pynat.py
-"""PyNAT v0.5.0
+"""PyNAT v0.6.0
 
 Discover external IP addresses and NAT topologies using STUN.
 
@@ -40,7 +40,7 @@ except ImportError:
     def randint(n):
         return random.getrandbits(n)
 
-__version__ = '0.5.0'
+__version__ = '0.6.0'
 url = 'https://github.com/arantonitis/pynat'
 
 
@@ -78,7 +78,7 @@ def ORD(ch):   # compatible to python3
   return ch if type(ch) == int else ord(ch)
 
 def long_to_bytes(n,length):  # compatible to PY2 and PY3
-  # same to PY3: n.to_bytes(length,byteorder='big')
+  # Equivalent to n.to_bytes(length,byteorder='big') in Python 3
   return bytes(bytearray((n >> i*8) & 0xff for i in range(length-1,-1,-1)))
 
 # Send a STUN message to a server, with optional extra data
