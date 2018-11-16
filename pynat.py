@@ -40,7 +40,7 @@ except ImportError:
     def randint(n):
         return random.getrandbits(n)
 
-__version__ = '0.6.0'
+__version__ = '0.6.1'
 url = 'https://github.com/arantonitis/pynat'
 
 
