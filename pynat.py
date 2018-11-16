@@ -20,7 +20,7 @@
 # SOFTWARE.
 #
 # pynat.py
-"""PyNAT v0.6.0
+"""PyNAT v0.6.1
 
 Discover external IP addresses and NAT topologies using STUN.
 
