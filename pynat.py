@@ -20,7 +20,7 @@
 # SOFTWARE.
 #
 # pynat.py
-"""PyNAT v0.6.0
+"""PyNAT v0.6.1
 
 Discover external IP addresses and NAT topologies using STUN.
 
@@ -230,9 +230,9 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
             return BLOCKED, None, None
     # Otherwise the network is not blocked and we can continue
     ext_ip, ext_port = response['ext_ip'], response['ext_port']
-    change_addr = response['change_ip'], response['change_port']
+    change_addr = response.get('change_ip'), response.get('change_port')
     # Either Open Internet or a UDP firewall, do test 2
-    if response['ext_ip'] == source_ip and response['ext_port'] == source_port:
+    if ext_ip == source_ip and ext_port == source_port:
         response = stun_test_2(sock, stun_addr)
         # Open Internet
         if response is not None:
