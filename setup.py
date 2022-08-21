@@ -1,5 +1,5 @@
 # PyNAT: Discover external IP addresses and NAT topologies using STUN.
-# Copyright (C) 2018 Ariel Antonitis. Licensed under the MIT license.
+# Copyright (C) 2022 Ariel A. Licensed under the MIT license.
 #
 # setup.py
 from setuptools import setup
@@ -13,7 +13,7 @@ setup(name='pynat',
       version=__version__,
       description='Discover external IP addresses and NAT topologies using STUN.',
       long_description=long_description,
-      author='Ariel Antonitis',
+      author='Ariel A',
       author_email='arant@mit.edu',
       url=url,
       py_modules=['pynat'],

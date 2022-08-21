@@ -1,5 +1,5 @@
 # PyNAT: Discover external IP addresses and NAT topologies using STUN.
-# Copyright (C) 2018 Ariel Antonitis. Licensed under the MIT License.
+# Copyright (C) 2022 Ariel A. Licensed under the MIT License.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,11 +20,11 @@
 # SOFTWARE.
 #
 # pynat.py
-"""PyNAT v0.6.2
+"""PyNAT v0.7.0
 
 Discover external IP addresses and NAT topologies using STUN.
 
-Copyright (C) 2018 Ariel Antonitis. Licensed under the MIT License.
+Copyright (C) 2022 Ariel A. Licensed under the MIT License.
 """
 from six import text_type
 import sys
@@ -42,8 +42,8 @@ except ImportError:
     def randint(n):
         return random.getrandbits(n)
 
-__version__ = '0.6.2'
-url = 'https://github.com/arantonitis/pynat'
+__version__ = '0.7.0'
+url = 'https://github.com/aarant/pynat'
 
 
 class PynatError(Exception):
