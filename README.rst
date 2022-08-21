@@ -56,7 +56,7 @@ Run ``pynat -h`` or ``pynat --help`` for more options::
     optional arguments:
       -h, --help            show this help message and exit
       --source_ip SOURCE_IP
-                            The source IPv4 address to bind to.
+                            The source IPv4/IPv6 address to bind to.
       --source-port SOURCE_PORT
                             The source port to bind to.
       --stun-host STUN_HOST

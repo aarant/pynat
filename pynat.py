@@ -26,11 +26,13 @@ Discover external IP addresses and NAT topologies using STUN.
 
 Copyright (C) 2018 Ariel Antonitis. Licensed under the MIT License.
 """
+from six import text_type
 import sys
 import socket
 import random
 import codecs
 import argparse
+import ipaddress
 try:
     import secrets
 
@@ -85,6 +87,19 @@ def long_to_bytes(n, length):  # compatible to PY2 and PY3
     return bytes(bytearray((n >> i*8) & 0xff for i in range(length-1, -1, -1)))
 
 
+# Get the family of an IP address
+def get_address_family(addr):
+    try:
+        ipaddress.IPv4Interface(text_type(addr))
+        return socket.AF_INET
+    except ipaddress.AddressValueError:
+        try:
+            ipaddress.IPv6Interface(text_type(addr))
+            return socket.AF_INET6
+        except ipaddress.AddressValueError:
+            raise PynatError('Invalid IP address: %s' % addr)
+
+
 # Send a STUN message to a server, with optional extra data
 def send_stun_message(sock, addr, msg_type, trans_id=None, send_data=b''):
     if trans_id is None:
@@ -130,8 +145,8 @@ def get_stun_response(sock, addr, trans_id=None, send_data=b'', max_timeouts=6):
                     i += 4 - (attr_length % 4)
                 if attr_type in [MAPPED_ADDRESS, SOURCE_ADDRESS, CHANGED_ADDRESS]:
                     family, port = ORD(attr_value[1]), int(codecs.encode(attr_value[2:4], 'hex'), 16)
-                    ip = socket.inet_ntoa(attr_value[4:8])
                     if family == 0x01:  # IPv4
+                        ip = socket.inet_ntop(socket.AF_INET, attr_value[4:8])
                         if attr_type == XOR_MAPPED_ADDRESS:
                             cookie_int = int(codecs.encode(MAGIC_COOKIE, 'hex'), 16)
                             port ^= cookie_int >> 16
@@ -145,7 +160,19 @@ def get_stun_response(sock, addr, trans_id=None, send_data=b'', max_timeouts=6):
                         elif attr_type == CHANGED_ADDRESS:
                             response['change_ip'], response['change_port'] = ip, port
                     else:  # family == 0x02:  # IPv6
-                        pass
+                        ip = socket.inet_ntop(socket.AF_INET6, attr_value[4:20])
+                        if attr_type == XOR_MAPPED_ADDRESS:
+                            cookie_int = int(codecs.encode(MAGIC_COOKIE, 'hex'), 16)
+                            port ^= cookie_int >> 16
+                            ip = int(codecs.encode(attr_value[4:20], 'hex'), 16) ^ (cookie_int << 96 | trans_id)
+                            ip = socket.inet_ntop(socket.AF_INET6, long_to_bytes(ip, 32))
+                            response['xor_ip'], response['xor_port'] = ip, port
+                        elif attr_type == MAPPED_ADDRESS:
+                            response['ext_ip'], response['ext_port'] = ip, port
+                        elif attr_type == SOURCE_ADDRESS:
+                            response['src_ip'], response['src_port'] = ip, port
+                        elif attr_type == CHANGED_ADDRESS:
+                            response['change_ip'], response['change_port'] = ip, port
             # Prefer, when possible, to use XORed IPs and ports
             xor_ip, xor_port = response.get('xor_ip', None), response.get('xor_port', None)
             if xor_ip is not None:
@@ -157,9 +184,18 @@ def get_stun_response(sock, addr, trans_id=None, send_data=b'', max_timeouts=6):
     return response
 
 
-# Retrieve the internal working IP used to access the Internet
-def get_internal_ip(test_addr=('8.8.8.8', 80)):  # By default, queries Google's DNS
+# Retrieve the internal working IPv4 used to access the Internet
+def get_internal_ipv4(test_addr=('8.8.8.8', 80)):  # By default, queries Google's DNS
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    sock.connect(test_addr)
+    ip = sock.getsockname()[0]
+    sock.close()
+    return ip
+
+
+# Retrieve the internal working IPv6 used to access the Internet
+def get_internal_ipv6(test_addr=('2001:4860:4860::8888', 80)):  # By default, queries Google's DNS
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
     sock.connect(test_addr)
     ip = sock.getsockname()[0]
     sock.close()
@@ -216,7 +252,8 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
     # If no socket is passed in, create one and close it when done
     ephemeral_sock = sock is None
     if sock is None:
-        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        family = get_address_family(source_ip)
+        sock = socket.socket(family, socket.SOCK_DGRAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         sock.bind((source_ip, source_port))
     # Find a stun host if none was selected
@@ -230,12 +267,16 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
                 return BLOCKED, None, None, None
             else:
                 return BLOCKED, None, None
-    # If a stun hose was specified, set stun_addr
+    # If a stun host was specified, set stun_addr
     else:
         stun_addr = (stun_host, stun_port)
     # Determine the actual local, or source IP
     if source_ip == '0.0.0.0':
-        source_ip = get_internal_ip(stun_addr)
+        # IPv4
+        source_ip = get_internal_ipv4(stun_addr)
+    elif source_ip == '::':
+        # IPv6
+        source_ip = get_internal_ipv6(stun_addr)
     # Perform Test 1, a simple STUN Request
     response = stun_test_1(sock, stun_addr)
     # If the test fails, assume the network blocked
@@ -297,7 +338,7 @@ def get_ip_info(source_ip='0.0.0.0', source_port=54320, stun_host=None, stun_por
 def main():
     try:
         parser = argparse.ArgumentParser(prog='pynat', description=__doc__)
-        parser.add_argument('--source_ip', help='The source IPv4 address to bind to.', type=str, default='0.0.0.0')
+        parser.add_argument('--source_ip', help='The source IPv4/IPv6 address to bind to.', type=str, default='0.0.0.0')
         parser.add_argument('--source-port', help='The source port to bind to.', type=int, default=54320)
         parser.add_argument('--stun-host', help='The STUN host to use for queries.', type=str)
         parser.add_argument('--stun-port', help='The port of the STUN host to use for queries.', type=int, default=3478)
